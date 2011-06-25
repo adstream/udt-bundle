@@ -12,6 +12,18 @@
         <module>udt-client</module>
     </modules>
 
+    <organization>
+        <name>Adstream</name>
+        <url>http://www.adstream.com/</url>
+    </organization>
+
+    <developers>
+        <developer>
+            <name>Yaroslav Klymko</name>
+            <email>t3hnar@gmail.com</email>
+        </developer>
+    </developers>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.6</java.version>
