@@ -16,8 +16,8 @@ public class TestSendFileReceiveFile extends UDTTestBase{
 		do{
 			Thread.sleep(500);
 		}while(!serverStarted);
-		
-		File f=new File("src/test/java/datafile");
+
+        File f = new File("D:\\Music\\2005 Bif Naked-Superbeautifulmonster.zip");
 		//File f=new File("/tmp/100MB");
 		
 		File tmp=File.createTempFile("udtest-", null);
@@ -31,7 +31,7 @@ public class TestSendFileReceiveFile extends UDTTestBase{
 	}
 	
 	private void runServer(){
-		Runnable r=new Runnable(){
+		Runnable r = new Runnable(){
 			public void run(){
 				String []args=new String[]{"65321"};
 				try{

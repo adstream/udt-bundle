@@ -17,7 +17,13 @@ import udt.util.UDTThreadFactory;
 
 public class EchoServer implements Runnable{
 
-	final ExecutorService pool=Executors.newFixedThreadPool(2);
+    public static void main(String... args) throws Exception {
+     EchoServer es=new EchoServer(65321);
+		es.start();
+		Thread.sleep(1000);
+    }
+
+    final ExecutorService pool=Executors.newFixedThreadPool(2);
 
 	final UDTServerSocket server;
 	final Thread serverThread;
