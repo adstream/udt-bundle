@@ -1,10 +1,7 @@
 package com.adstream.udt
 
-import com.barchart.udt.{SocketUDT, TypeUDT}
 import java.net.{InetSocketAddress, InetAddress}
 import java.io.{OutputStreamWriter, PrintWriter}
-import udt.UDTClient
-import udt.util.Util
 import io.Source
 
 /**

@@ -1,6 +1,5 @@
 package com.adstream.udt
 
-import java.net.InetAddress
 import akka.event.EventHandler
 import akka.actor.Actor._
 import akka.actor.Actor
@@ -10,52 +9,120 @@ import java.io._
 import scala.tools.nsc.io.Streamable
 import sun.misc.Resource
 import collection.mutable.ListBuffer
-import com.barchart.udt.{TypeUDT, SocketUDT}
+import java.net.{InetSocketAddress, InetAddress}
+import com.barchart.udt.{MonitorUDT, OptionUDT, TypeUDT, SocketUDT}
+import java.nio.ByteBuffer
+import java.util.concurrent.atomic.AtomicLong
+import util.Properties
 
 /**
  * @author Yaroslav Klymko
  */
 object Server extends App {
 
-
-
-  //  val server = new UDTServerSocket(InetAddress.getByName("localhost"), 65321)
-  //  val socket = server.accept()
-  //  System.out.println("Processing request from <" + socket.getSession.getDestination + ">")
-  //  var in: UDTInputStream = socket.getInputStream
-  //  var out: UDTOutputStream = socket.getOutputStream
-  //  var writer = new FileOutputStream("C:\\Users\\t3hnar\\Projects\\adstream\\udt-bundle\\test.avi")
-  //  val buffer = new Array[Byte](0x1000);
-  //  while (true) {
-  //    val read = in.read(buffer, 0, buffer.size)
-  //    if (read > 0)
-  //      writer.write(buffer, 0, read)
-  //  }
-
-//  val server = actorOf[Server]
-//  server.start()
-//  server ! "connect"
-
   println(System.getProperty("os.name"))
+  println(System.getProperty("os.arch"))
 
-	/** The Constant OS_ARCH. */
-  val arch = "os.arch"
-	println(System.getProperty(arch))
-
-  System.setProperty(arch,"x86_64")
-  println(System.getProperty(arch))
-
-  //TODO from config
-  val socket = new SocketUDT(TypeUDT.DATAGRAM)
-  val id = socket.getSocketId
+  main
 
 
+  def main {
 
+    println("started SERVER");
+
+    // specify server listening interface
+    val bindAddress = "localhost"
+
+    // specify server listening port
+    val localPort = 12345
+
+    // specify how many packets must come before stats logging
+    val countMonitor = 30000
+
+    try {
+
+      val acceptor = new SocketUDT(TypeUDT.DATAGRAM);
+
+      val localSocketAddress = new InetSocketAddress(
+        bindAddress, localPort);
+
+      acceptor.bind(localSocketAddress);
+      println("bind; localSocketAddress={} " + localSocketAddress);
+
+      acceptor.listen(1000);
+      println("listen;")
+
+      val receiver = acceptor.accept()
+
+      val timeStart = System.currentTimeMillis();
+
+      //
+
+      val remoteSocketAddress = receiver.getRemoteSocketAddress();
+
+      println("receiver; remoteSocketAddress={} " + remoteSocketAddress);
+
+      while (true) {
+
+        val array = new Array[Byte](SIZE)
+
+        val result = receiver.receive(array);
+
+        assert(result == SIZE, "wrong size")
+
+
+        getSequenceNumber(array)
+
+        if (sequenceNumber % countMonitor == 0) {
+
+          receiver.updateMonitor(false);
+          val timeFinish = System.currentTimeMillis();
+          val timeDiff = 1 + (timeFinish - timeStart) / 1000;
+
+          val byteCount = sequenceNumber * SIZE;
+          val rate = byteCount / timeDiff;
+
+          println("receive rate, bytes/second: {}", rate);
+
+        }
+
+      }
+
+      // log.info("result={}", result);
+
+    } catch {
+      case e => println("unexpected", e);
+      e.printStackTrace()
+    }
+
+  }
+
+  var sequenceNumber = 0;
+
+  def getSequenceNumber(array: Array[Byte]) {
+
+    val buffer = ByteBuffer.wrap(array);
+
+    val currentNumber = buffer.getLong();
+
+    if (currentNumber == sequenceNumber) {
+      sequenceNumber = sequenceNumber +1;
+    } else {
+      println("sequence error; currentNumber={} sequenceNumber={} " + sequenceNumber);
+      System.exit(1);
+    }
+
+  }
+
+  val sequencNumber = new AtomicLong(0);
+
+  val SIZE = 1460;
 
 
 }
 
 class Server extends Actor {
+  val socket = new SocketUDT(TypeUDT.DATAGRAM)
   val handler = actorOf[Handler]
 
   override def preStart() {
@@ -69,7 +136,8 @@ class Server extends Actor {
   def receive = {
     case "connect" =>
       EventHandler.info(this, "Connected")
-//      self ! "connect"
+      handler ! socket.accept()
+      self ! "connect"
     case msg => EventHandler.info(this, "Received unknown message: " + msg)
   }
 }
@@ -83,7 +151,9 @@ class Handler extends Actor with RoundRobinSelector with FixedCapacityStrategy {
   def limit = 2
 
   protected def receive = {
-     case msg => EventHandler.info(this, "Received unknown message: " + msg)
-  }
+    case socket: SocketUDT =>
+      EventHandler.info(this, "Received unknown message: " + socket)
 
+    case msg => EventHandler.info(this, "Received unknown message: " + msg)
+  }
 }

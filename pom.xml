@@ -64,13 +64,6 @@
                 <version>${scala.version}</version>
                 <scope>provided</scope>
             </dependency>
-
-
-            <dependency>
-                <groupId>udt-java</groupId>
-                <artifactId>udt-java</artifactId>
-                <version>0.6-SNAPSHOT</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
