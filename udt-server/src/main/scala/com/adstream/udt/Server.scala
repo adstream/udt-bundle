@@ -5,7 +5,6 @@ import akka.actor.Actor._
 import akka.actor.Actor
 import akka.routing._
 import io.Source
-import java.io._
 import scala.tools.nsc.io.Streamable
 import sun.misc.Resource
 import collection.mutable.ListBuffer
@@ -14,17 +13,16 @@ import com.barchart.udt.{MonitorUDT, OptionUDT, TypeUDT, SocketUDT}
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
 import util.Properties
+import com.sun.xml.internal.ws.developer.MemberSubmissionAddressing.Validation
+import net.liftweb.common.Loggable
+import java.io._
+import com.adstream.udt.Predef._
 
 /**
  * @author Yaroslav Klymko
  */
-object Server extends App {
-
-  println(System.getProperty("os.name"))
-  println(System.getProperty("os.arch"))
-
+object Server extends App with Loggable {
   main
-
 
   def main {
 
@@ -41,7 +39,10 @@ object Server extends App {
 
     try {
 
+      val SIZE = 1460;
+
       val acceptor = new SocketUDT(TypeUDT.DATAGRAM);
+      acceptor.configureBlocking(true)
 
       val localSocketAddress = new InetSocketAddress(
         bindAddress, localPort);
@@ -49,8 +50,8 @@ object Server extends App {
       acceptor.bind(localSocketAddress);
       println("bind; localSocketAddress={} " + localSocketAddress);
 
-      acceptor.listen(1000);
-      println("listen;")
+      acceptor.listen(1);
+      println("listen")
 
       val receiver = acceptor.accept()
 
@@ -58,35 +59,67 @@ object Server extends App {
 
       //
 
-      val remoteSocketAddress = receiver.getRemoteSocketAddress();
-
-      println("receiver; remoteSocketAddress={} " + remoteSocketAddress);
-
-      while (true) {
-
-        val array = new Array[Byte](SIZE)
-
-        val result = receiver.receive(array);
-
-        assert(result == SIZE, "wrong size")
+      val remoteSocketAddress = receiver.getRemoteSocketAddress;
 
 
-        getSequenceNumber(array)
+      //      receiver
 
-        if (sequenceNumber % countMonitor == 0) {
+      //      println("receiver; remoteSocketAddress={} " + remoteSocketAddress);
 
-          receiver.updateMonitor(false);
-          val timeFinish = System.currentTimeMillis();
-          val timeDiff = 1 + (timeFinish - timeStart) / 1000;
 
-          val byteCount = sequenceNumber * SIZE;
-          val rate = byteCount / timeDiff;
+      val bs = new Array[Byte](Const.firstMessageSize)
+      receiver.receive(bs)
 
-          println("receive rate, bytes/second: {}", rate);
+      val dis = new DataInputStream(new ByteArrayInputStream(bs))
+      val fileSize = dis.readLong()
+      logger.debug("fileSize: " + fileSize)
+      val packetSize = dis.readInt()
+      logger.debug("packetSize: " + packetSize)
 
-        }
+      //TODO
+      val isr = new InputStreamReader(dis, "UTF-8")
+      val chars = new Array[Char](Const.stringSize)
+      isr.read(chars)
+      val fileName = new String(chars)
+      logger.debug("fileName: " + fileName)
+      //      isr.close()
 
-      }
+      val file = new File("C:\\Users\\t3hnar\\Projects\\adstream\\udt-bundle\\test.avi")
+
+
+      logger.debug("receiver.getReceiveBufferSize: " + receiver.getReceiveBufferSize)
+      //      val bytes = new Array[Byte](packetSize)
+      //      acceptor.receive(bytes)
+      //      receiver.receive(bytes)
+      //      receiver.getReceiveBufferSize
+
+      //      logger.debug("bytes.head: " + bytes.head + "; bytes.last: " + bytes.last)
+
+
+
+      file.write(bytes => {
+//        Thread.sleep(1000)
+        logger.debug("receive bytes.length: " + bytes.length)
+        receiver.receive(bytes)
+        logger.debug("bytes.head: " + bytes.head + "; bytes.last: " + bytes.last)
+      }, fileSize, packetSize)
+      //
+
+
+      //      receiver.send()
+
+
+      //      while (true) {
+      //
+      //        val array = new Array[Byte](SIZE)
+      //        val result = receiver.receive(array);
+      //        println("result: " + result)
+      //        println(array.mkString)
+      //        println("last: " + array.last)
+      //        //        println("receive rate, bytes/second: {}", rate);
+      //
+      //        Thread.sleep(1000);
+      //      }
 
       // log.info("result={}", result);
 
@@ -97,63 +130,5 @@ object Server extends App {
 
   }
 
-  var sequenceNumber = 0;
 
-  def getSequenceNumber(array: Array[Byte]) {
-
-    val buffer = ByteBuffer.wrap(array);
-
-    val currentNumber = buffer.getLong();
-
-    if (currentNumber == sequenceNumber) {
-      sequenceNumber = sequenceNumber +1;
-    } else {
-      println("sequence error; currentNumber={} sequenceNumber={} " + sequenceNumber);
-      System.exit(1);
-    }
-
-  }
-
-  val sequencNumber = new AtomicLong(0);
-
-  val SIZE = 1460;
-
-
-}
-
-class Server extends Actor {
-  val socket = new SocketUDT(TypeUDT.DATAGRAM)
-  val handler = actorOf[Handler]
-
-  override def preStart() {
-    handler.start()
-  }
-
-  override def postStop() {
-    handler.stop()
-  }
-
-  def receive = {
-    case "connect" =>
-      EventHandler.info(this, "Connected")
-      handler ! socket.accept()
-      self ! "connect"
-    case msg => EventHandler.info(this, "Received unknown message: " + msg)
-  }
-}
-
-class Handler extends Actor with RoundRobinSelector with FixedCapacityStrategy {
-
-  def selectionCount = 1
-
-  def partialFill = true
-
-  def limit = 2
-
-  protected def receive = {
-    case socket: SocketUDT =>
-      EventHandler.info(this, "Received unknown message: " + socket)
-
-    case msg => EventHandler.info(this, "Received unknown message: " + msg)
-  }
 }

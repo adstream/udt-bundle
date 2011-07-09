@@ -2,8 +2,14 @@ package com.adstream.udt
 
 import java.net.InetSocketAddress
 import com.barchart.udt.{SocketUDT, TypeUDT, OptionUDT}
+import util.Random
+import net.liftweb.common.Loggable
+import java.io._
+import org.specs2.internal.scalaz.Validation
+import sun.reflect.generics.tree.BooleanSignature
+import com.adstream.udt.Predef._
 
-object Client extends App {
+object Client extends App with Loggable {
 
   de
 
@@ -30,10 +36,10 @@ object Client extends App {
 
     // specify number of packet batches between stats logging
     val countMonitor = 1
-
     try {
 
       val sender = new SocketUDT(TypeUDT.DATAGRAM);
+      sender.configureBlocking(true)
 
       // specify maximum upload speed, bytes/sec
       sender.setOption(OptionUDT.UDT_MAXBW, 30000000L);
@@ -52,35 +58,44 @@ object Client extends App {
 
       var count = 0;
 
-      while (true) {
-
-        for (k <- 0 to countBatch) {
-
-          val array:Array[Byte] = (    0 until SIZE).toArray.map(_.toByte)
+      //      val bs = new Array[Byte](Const.firstMessageSize)
 
 
-          val result = sender.send(array);
-        }
+      val path = "C:/Users/t3hnar/Downloads/gpsies.apk"
+      val file = new File(path)
+      val fileSize = file.length()
+      logger.debug("fileSize: " + fileSize)
 
-        // sleep between batches
-        Thread.sleep(countSleep);
+      val baos = new ByteArrayOutputStream(Const.firstMessageSize)
+      val dos = new DataOutputStream(baos)
+      dos.writeLong(fileSize)
+      val packetSize = Const.packageSize
+      logger.debug("packetSize: " + packetSize)
+      dos.writeInt(packetSize)
+      val osw = new OutputStreamWriter(dos)
 
-        count = count + 1;
+      val fileName = file.getName
+      logger.debug("fileName: " + fileName)
+      val chars = new Array[Char](Const.stringSize)
+      fileName.toCharArray.copyToArray(chars)
+      osw.write(chars)
+      osw.flush()
+//      osw.close()
 
-        if (count % countMonitor == 0) {
-          sender.updateMonitor(false);
-        }
+      sender.send(baos.toByteArray)
 
-      }
 
-      // println("result={}", result);
-
+      file.read(bytes => {
+//        Thread.sleep(1000)
+        logger.debug("send bytes.length: " + bytes.length)
+        logger.debug(bytes.mkString)
+        assert(sender.send(bytes) == bytes.length)
+      }, packetSize)
     } catch {
       case e => e.printStackTrace()
     }
 
   }
 
-  val SIZE = 1460;
 
 }
