@@ -3,8 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.adstream.udt</groupId>
-    <artifactId>udt-server</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>common</artifactId>
 
     <parent>
         <groupId>com.adstream.udt</groupId>
@@ -14,10 +13,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.adstream.udt</groupId>
-            <artifactId>common</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
         </dependency>
@@ -25,39 +20,12 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-compiler</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>com.barchart.udt</groupId>
-            <artifactId>barchart-udt4-bundle</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>se.scalablesolutions.akka</groupId>
-            <artifactId>akka-actor</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>se.scalablesolutions.akka</groupId>
-            <artifactId>akka-slf4j</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>net.liftweb</groupId>
-            <artifactId>lift-common_${scala.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>net.liftweb</groupId>
-            <artifactId>lift-util_${scala.version}</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.specs2</groupId>
             <artifactId>specs2_${scala.version}</artifactId>
         </dependency>
     </dependencies>
+
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
         <testSourceDirectory>src/test/scala</testSourceDirectory>
@@ -76,6 +44,14 @@
                 <groupId>org.scala-tools</groupId>
                 <artifactId>maven-scala-plugin</artifactId>
                 <version>2.15.2</version>
+                <configuration>
+                    <args>
+                        <arg>-unchecked</arg>
+                        <arg>-deprecation</arg>
+                        <arg>-explaintypes</arg>
+                    </args>
+                    <charset>${project.build.sourceEncoding}</charset>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -84,6 +60,18 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.8</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Spec.class</include>
+                    </includes>
+                    <excludes>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

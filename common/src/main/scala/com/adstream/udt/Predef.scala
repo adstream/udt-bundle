@@ -1,5 +1,4 @@
-package com.adstream
-package udt
+package com.adstream.udt
 
 import java.security.MessageDigest
 import java.io.{FileOutputStream, FileInputStream, File}

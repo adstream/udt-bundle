@@ -1,15 +1,17 @@
 package com.adstream.udt
 
-import java.net.InetSocketAddress
-import com.barchart.udt.{SocketUDT, TypeUDT, OptionUDT}
-import util.Random
 import net.liftweb.common.Loggable
+import scala.App
+import scala.Predef._
+import java.net.InetSocketAddress
 import java.io._
-import org.specs2.internal.scalaz.Validation
-import sun.reflect.generics.tree.BooleanSignature
-import com.adstream.udt.Predef._
+import Predef._
+import com.barchart.udt.{OptionUDT, TypeUDT, SocketUDT}
 
-object Client extends App with Loggable {
+/**
+ * @author Yaroslav Klymko
+ */
+object FileClient extends App with Loggable {
 
   de
 
@@ -39,7 +41,6 @@ object Client extends App with Loggable {
     try {
 
       val sender = new SocketUDT(TypeUDT.DATAGRAM);
-      sender.configureBlocking(true)
 
       // specify maximum upload speed, bytes/sec
       sender.setOption(OptionUDT.UDT_MAXBW, 30000000L);
@@ -56,41 +57,15 @@ object Client extends App with Loggable {
       sender.connect(remoteSocketAddress);
       println("connect; remoteSocketAddress={}", remoteSocketAddress);
 
-      var count = 0;
-
-      //      val bs = new Array[Byte](Const.firstMessageSize)
-
-
-      val path = "C:/Users/t3hnar/Downloads/gpsies.apk"
+      val path = "C:/Users/t3hnar/Downloads/SKIDROW.rar"
       val file = new File(path)
-      val fileSize = file.length()
-      logger.debug("fileSize: " + fileSize)
+      val tf = TransferInfo(file, 1024 * 10)
 
-      val baos = new ByteArrayOutputStream(Const.firstMessageSize)
-      val dos = new DataOutputStream(baos)
-      dos.writeLong(fileSize)
-      val packetSize = Const.packageSize
-      logger.debug("packetSize: " + packetSize)
-      dos.writeInt(packetSize)
-      val osw = new OutputStreamWriter(dos)
-
-      val fileName = file.getName
-      logger.debug("fileName: " + fileName)
-      val chars = new Array[Char](Const.stringSize)
-      fileName.toCharArray.copyToArray(chars)
-      osw.write(chars)
-      osw.flush()
-//      osw.close()
-
-      sender.send(baos.toByteArray)
-
+      sender.send(tf.bytes)
 
       file.read(bytes => {
-//        Thread.sleep(1000)
-        logger.debug("send bytes.length: " + bytes.length)
-        logger.debug(bytes.mkString)
         assert(sender.send(bytes) == bytes.length)
-      }, packetSize)
+      }, tf.packetSize)
     } catch {
       case e => e.printStackTrace()
     }

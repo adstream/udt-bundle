@@ -2,12 +2,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.adstream</groupId>
-    <artifactId>udt-bundle</artifactId>
+    <groupId>com.adstream.udt</groupId>
+    <artifactId>udt</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <url>https://github.com/adstream/udt-bundle</url>
+    <inceptionYear>2011</inceptionYear>
+
     <modules>
+        <module>common</module>
         <module>udt-server</module>
         <module>udt-client</module>
     </modules>
@@ -28,7 +32,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.6</java.version>
         <scala.version>2.9.0-1</scala.version>
+        <akka.version>1.1.3</akka.version>
+        <lift.version>2.4-M2</lift.version>
     </properties>
+
 
     <repositories>
         <repository>
@@ -36,20 +43,52 @@
             <name>Scala-Tools Dependencies Repository for Releases</name>
             <url>http://scala-tools.org/repo-releases</url>
         </repository>
+
+        <repository>
+            <id>akka.releases</id>
+            <name>Akka Repository</name>
+            <url>http://akka.io/repository</url>
+        </repository>
     </repositories>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>1.6.1</version>
+                <groupId>com.adstream.udt</groupId>
+                <artifactId>common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.barchart.udt</groupId>
+                <artifactId>barchart-udt4-bundle</artifactId>
+                <version>1.0.2</version>
             </dependency>
 
             <dependency>
-                <groupId>org.specs2</groupId>
-                <artifactId>specs2_2.9.0-1</artifactId>
-                <version>1.4</version>
+                <groupId>se.scalablesolutions.akka</groupId>
+                <artifactId>akka-actor</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>se.scalablesolutions.akka</groupId>
+                <artifactId>akka-slf4j</artifactId>
+                <version>${akka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.liftweb</groupId>
+                <artifactId>lift-common_${scala.version}</artifactId>
+                <version>${lift.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.liftweb</groupId>
+                <artifactId>lift-util_${scala.version}</artifactId>
+                <version>${lift.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>0.9.28</version>
             </dependency>
 
             <dependency>
@@ -57,63 +96,19 @@
                 <artifactId>scala-library</artifactId>
                 <version>${scala.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.scala-lang</groupId>
                 <artifactId>scala-compiler</artifactId>
                 <version>${scala.version}</version>
                 <scope>provided</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.specs2</groupId>
+                <artifactId>specs2_${scala.version}</artifactId>
+                <version>1.4</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-compiler</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.specs2</groupId>
-            <artifactId>specs2_2.9.0-1</artifactId>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <sourceDirectory>src/main/scala</sourceDirectory>
-        <testSourceDirectory>src/test/scala</testSourceDirectory>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.3.2</version>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <encoding>${project.build.sourceEncoding}</encoding>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.scala-tools</groupId>
-                <artifactId>maven-scala-plugin</artifactId>
-                <version>2.15.2</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>
