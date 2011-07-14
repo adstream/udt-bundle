@@ -11,38 +11,32 @@ import net.liftweb.util.Props
  * @author Yaroslav Klymko
  */
 object FileServer extends App with Loggable {
-  main
+  start()
 
-  def main {
-    // specify how many packets must come before stats logging
-    val countMonitor = 30000
+  def start() {
+    val acceptor = new SocketUDT(TypeUDT.DATAGRAM);
 
-    try {
-      val acceptor = new SocketUDT(TypeUDT.DATAGRAM);
+    Configuration.configure(acceptor)
 
-      val serverAddress = new InetSocketAddress("localhost", Props.getInt("udt.server.port").openOr(12345));
-      logger.info("UDT Server address: %s".format(serverAddress))
-      acceptor.bind(serverAddress);
+    val serverAddress = new InetSocketAddress("localhost", Props.getInt("udt.server.port", 12345));
+    logger.info("UDT Server address: %s".format(serverAddress))
+    acceptor.bind(serverAddress);
 
-      val listenQueueSize = Props.getInt("udt.listen.queue.size").openOr(1)
-      logger.info("UDT Liten queue size: %s".format(listenQueueSize))
-      acceptor.listen(listenQueueSize);
+    val listenQueueSize = Props.getInt("udt.listen.queue.size", 10)
+    logger.info("UDT Listen queue size: %s".format(listenQueueSize))
+    acceptor.listen(listenQueueSize);
 
-      val receiver = acceptor.accept()
-      val remoteSocketAddress = receiver.getRemoteSocketAddress;
+    val receiver = acceptor.accept()
+    val remoteSocketAddress = receiver.getRemoteSocketAddress;
 
-      val bs = new Array[Byte](1024)
-      receiver.receive(bs)
+    val bs = new Array[Byte](1024)
+    receiver.receive(bs)
 
-      val tf = TransferInfo(bs)
-      val file = new File("D:\\Projects\\adstream\\udt-bundle", tf.fileName)
+    val tf = TransferInfo(bs)
+    val file = new File("D:\\Projects\\adstream\\udt-bundle", tf.fileName)
 
-      file.write(bytes => {
-        receiver.receive(bytes)
-      }, tf.fileSize, tf.packetSize)
-
-    } catch {
-      case e => logger.error(e.getMessage, e);
-    }
+    file.write(bytes => {
+      receiver.receive(bytes)
+    }, tf.fileSize, tf.packetSize)
   }
 }

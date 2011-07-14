@@ -1,2 +1,48 @@
 udt.server.port=12345
-udt.listen.queue.size=1
+udt.listen.queue.size=10
+
+
+#UDT_MSS Maximum packet size (bytes). Including all UDT, UDP, and IP headers. Default 1500 bytes.
+udt.max.packet.size=1500
+#UDT_FC	Maximum window size (packets)	Default 25600.
+udt.window.size=25600
+
+
+#UDT_SNDSYN	synchronization mode of data sending. true for blocking sending; false for non-blocking sending. Default true.
+udt.send.sync=true
+#UDT_RCVSYN	synchronization mode for receiving.	true for blocking receiving; false for non-blocking receiving. Default true.
+udt.receive.sync=true
+
+
+#UDT_SNDBUF UDT sender buffer size limit (bytes). Default 10MB (10240000).
+udt.send.buffer=10240000
+#UDT_RCVBUF	UDT receiver buffer size limit (bytes). Default 10MB (10240000).
+udt.receive.buffer=10240000
+
+
+#UDP_SNDBUF	UDP socket sender buffer size (bytes). Default 1MB (1024000).
+udp.send.buffer=10240000
+#UDP_RCVBUF	UDP socket receiver buffer size (bytes). Default 1MB (1024000).
+udp.receive.buffer=10240000
+
+
+#UDT_LINGER	time on close(). Default 180 seconds.
+udt.linger=180
+
+
+#UDT_RENDEZVOUS	Rendezvous connection setup. Default false (no rendezvous mode).
+udt.rendezvous=false
+
+
+#UDT_SNDTIMEO sending call timeout (milliseconds).	Default -1 (infinite).
+udt.send.timeout=-1
+#UDT_RCVTIMEO receiving call timeout (milliseconds). Default -1 (infinite).
+udt.receive.timeout=-1
+
+
+#UDT_REUSEADDR reuse an existing address or create a new one. Default true (reuse).
+udt.reuse.address=true
+
+
+#UDT_MAXBW maximum bandwidth that one single UDT connection can use (bytes per second). Default -1 (no upper limit).
+udt.max.bandwidth=-1
