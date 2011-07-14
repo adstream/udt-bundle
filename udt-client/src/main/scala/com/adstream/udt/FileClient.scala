@@ -7,6 +7,7 @@ import java.net.InetSocketAddress
 import java.io._
 import Predef._
 import com.barchart.udt.{OptionUDT, TypeUDT, SocketUDT}
+import net.liftweb.util.Props
 
 /**
  * @author Yaroslav Klymko
@@ -16,18 +17,6 @@ object FileClient extends App with Loggable {
   de
 
   def de() {
-
-    println("started CLIENT");
-
-    // specify client sender interface
-    val bindAddress = "localhost"
-
-    // specify server listening address
-    val remoteAddress = "localhost"
-
-    // specify server listening port
-    val remotePort = 12345
-
     // specify server bandwidth limit
     val maxBandwidth = 1
     // specify number of packets sent in a batch
@@ -40,24 +29,22 @@ object FileClient extends App with Loggable {
     val countMonitor = 1
     try {
 
-      val sender = new SocketUDT(TypeUDT.DATAGRAM);
+      val sender = new SocketUDT(TypeUDT.DATAGRAM)
 
       // specify maximum upload speed, bytes/sec
-      sender.setOption(OptionUDT.UDT_MAXBW, 30000000L);
+      sender.setOption(OptionUDT.UDT_MAXBW, 30000000L)
 
-      val localSocketAddress = new InetSocketAddress(bindAddress, 54321);
+      val clientAddress = new InetSocketAddress("localhost", Props.getInt("udt.local.port").openOr(54321))
+      logger.info("UDT Client address: " + clientAddress)
+      sender.bind(clientAddress)
 
-      println("localSocketAddress : {}", localSocketAddress);
+      val serverAddress = new InetSocketAddress(
+        Props.get("udt.server.host").openOr("localhost"),
+        Props.getInt("udt.server.port").openOr(12345))
+      logger.info("UDT Server address: %s".format(serverAddress))
+      sender.connect(serverAddress)
 
-      sender.bind(localSocketAddress);
-      println("bind; localSocketAddress={}", localSocketAddress);
-
-      val remoteSocketAddress = new InetSocketAddress(remoteAddress, remotePort);
-
-      sender.connect(remoteSocketAddress);
-      println("connect; remoteSocketAddress={}", remoteSocketAddress);
-
-      val path = "C:/Users/t3hnar/Downloads/SKIDROW.rar"
+      val path = "C:/Users/Yaroslav Klymko/Downloads/apache-cxf-2.3.3.zip"
       val file = new File(path)
       val tf = TransferInfo(file, 1024 * 10)
 

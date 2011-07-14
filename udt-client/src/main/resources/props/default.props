@@ -1,0 +1,3 @@
+udt.local.port=54321
+udt.server.host=localhost
+udt.server.port=12345

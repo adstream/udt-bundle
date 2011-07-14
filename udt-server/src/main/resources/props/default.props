@@ -1,0 +1,2 @@
+udt.server.port=12345
+udt.listen.queue.size=1
