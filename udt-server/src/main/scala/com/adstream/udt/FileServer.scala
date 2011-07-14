@@ -14,6 +14,7 @@ object FileServer extends App with Loggable {
   start()
 
   def start() {
+    //TODO TypeUDT.DATAGRAM vs TypeUDT.STREAM
     val acceptor = new SocketUDT(TypeUDT.DATAGRAM);
 
     Configuration.configure(acceptor)

@@ -17,6 +17,7 @@ object FileClient extends App with Loggable {
   start()
 
   def start() {
+    //TODO TypeUDT.DATAGRAM vs TypeUDT.STREAM
     val sender = Configuration.configure(new SocketUDT(TypeUDT.DATAGRAM))
 
     val clientAddress = new InetSocketAddress("localhost", Props.getInt("udt.local.port", 54321))
