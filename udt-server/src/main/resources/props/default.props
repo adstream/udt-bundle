@@ -1,5 +1,6 @@
 udt.server.port=12345
 udt.listen.queue.size=10
+#server.out.dir=
 
 
 #UDT_MSS Maximum packet size (bytes). Including all UDT, UDP, and IP headers. Default 1500 bytes.

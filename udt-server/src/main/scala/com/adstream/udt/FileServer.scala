@@ -6,38 +6,69 @@ import net.liftweb.common.Loggable
 import java.io._
 import com.adstream.udt.Predef._
 import net.liftweb.util.Props
+import akka.actor.Actor._
+import akka.actor.Actor
+import akka.event.EventHandler
 
 /**
  * @author Yaroslav Klymko
  */
 object FileServer extends App with Loggable {
-  start()
+  val server = actorOf[FileServer].start()
+  server ! StartReceiving
+}
 
-  def start() {
-    //TODO TypeUDT.DATAGRAM vs TypeUDT.STREAM
-    val acceptor = new SocketUDT(TypeUDT.DATAGRAM);
 
-    Configuration.configure(acceptor)
+class FileServer extends Actor with Loggable {
+
+  val socket = new SocketUDT(TypeUDT.DATAGRAM);
+
+  override def preStart() {
+    Configuration.configure(socket)
 
     val serverAddress = new InetSocketAddress("localhost", Props.getInt("udt.server.port", 12345));
     logger.info("UDT Server address: %s".format(serverAddress))
-    acceptor.bind(serverAddress);
+    socket.bind(serverAddress);
 
     val listenQueueSize = Props.getInt("udt.listen.queue.size", 10)
     logger.info("UDT Listen queue size: %s".format(listenQueueSize))
-    acceptor.listen(listenQueueSize);
+    socket.listen(listenQueueSize);
+  }
 
-    val receiver = acceptor.accept()
-    val remoteSocketAddress = receiver.getRemoteSocketAddress;
-
-    val bs = new Array[Byte](1024)
-    receiver.receive(bs)
-
-    val tf = TransferInfo(bs)
-    val file = new File("D:\\Projects\\adstream\\udt-bundle", tf.fileName)
-
-    file.write(bytes => {
-      receiver.receive(bytes)
-    }, tf.fileSize, tf.packetSize)
+  protected def receive = {
+    case StartReceiving =>
+      EventHandler.debug(this, "StartReceiving")
+      actorOf[FileHandler].start ! Receive(socket.accept())
+      self ! StartReceiving
+    case StopServer => self.stop()
+    case unknown => EventHandler.warning(this, "Unknown message: %s".format(unknown))
   }
 }
+
+class FileHandler extends Actor with Loggable {
+  protected def receive = {
+    case Receive(receiver) =>
+      EventHandler.debug(this, "Receive")
+
+      val bs = new Array[Byte](1024)
+      receiver.receive(bs)
+
+      val tf = TransferInfo(bs)
+      val tmp = Props.get("server.out.dir", System.getProperty("java.io.tmpdir"))
+      val file = new File(tmp, tf.fileName)
+
+      file.write(bytes => {
+        logger.debug("bytes.length: " + bytes.length)
+        receiver.receive(bytes)
+      }, tf.fileSize, tf.packetSize)
+
+      receiver.send(Array[Byte](1, 1))
+    case unknown => EventHandler.warning(this, "Unknown message: %s".format(unknown))
+  }
+}
+
+case class StartReceiving
+
+case class Receive(receiver: SocketUDT)
+
+case class StopServer

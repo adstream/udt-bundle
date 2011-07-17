@@ -12,12 +12,11 @@ import com.barchart.udt.{TypeUDT, SocketUDT}
 /**
  * @author Yaroslav Klymko
  */
-object FileClient extends App with Loggable {
+object FileClient extends App with Loggable  {
 
   start()
 
   def start() {
-    //TODO TypeUDT.DATAGRAM vs TypeUDT.STREAM
     val sender = Configuration.configure(new SocketUDT(TypeUDT.DATAGRAM))
 
     val clientAddress = new InetSocketAddress("localhost", Props.getInt("udt.local.port", 54321))
@@ -30,14 +29,19 @@ object FileClient extends App with Loggable {
     logger.info("UDT Server address: %s".format(serverAddress))
     sender.connect(serverAddress)
 
-    val path = "C:\\Users\\Yaroslav Klymko\\Downloads\\mysql-5.5.8-winx64.msi"
+    val path = "C:\\Users\\t3hnar\\Downloads\\scala-2.9.0.1-installer.jar"
     val file = new File(path)
     val tf = TransferInfo(file, 1024*10)
 
     sender.send(tf.bytes)
 
     file.read(bytes => {
-      assert(sender.send(bytes) == bytes.length)
+      logger.debug("bytes.length: " + bytes.length)
+      val result = sender.send(bytes)
+      logger.debug("result: "+ result)
+//      assert(result == bytes.length)
     }, tf.packetSize)
+
+    sender.receive(new Array[Byte](2))
   }
 }

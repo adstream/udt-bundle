@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.adstream.udt</groupId>
-    <artifactId>udt-bundle</artifactId>
+    <artifactId>bundle</artifactId>
 
     <parent>
         <groupId>com.adstream.udt</groupId>
