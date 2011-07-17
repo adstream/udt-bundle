@@ -3,4 +3,4 @@
 **/target
 logs
 lib
-udt-server\src\main\resources\props\t3hnar.props
+udt-server/src/main/resources/props/t3hnar.props
