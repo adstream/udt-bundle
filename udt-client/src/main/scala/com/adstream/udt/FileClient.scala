@@ -8,15 +8,30 @@ import java.io._
 import Predef._
 import net.liftweb.util.Props
 import com.barchart.udt.{TypeUDT, SocketUDT}
+import akka.actor.Actor
+import akka.event.EventHandler
 
 /**
  * @author Yaroslav Klymko
  */
-object FileClient extends App with Loggable  {
 
-  start()
+object FileClient extends App with Loggable {
+  if (args.isEmpty) logger.error("File path is not provided")
+  else {
+    val path = args(0)
+    Actor.actorOf[FileClient].start() !! SendFile(new File(path))
+    Actor.registry.shutdownAll()
+  }
+}
 
-  def start() {
+class FileClient extends Actor with Loggable {
+
+  protected def receive = {
+    case SendFile(file) => send(file)
+    case unknown => EventHandler.warning(this, "Unknown message: %s".format(unknown))
+  }
+
+  def send(file: File) {
     val sender = Configuration.configure(new SocketUDT(TypeUDT.DATAGRAM))
 
     val clientAddress = new InetSocketAddress("localhost", Props.getInt("udt.local.port", 54321))
@@ -29,19 +44,27 @@ object FileClient extends App with Loggable  {
     logger.info("UDT Server address: %s".format(serverAddress))
     sender.connect(serverAddress)
 
-    val path = "C:\\Users\\t3hnar\\Downloads\\scala-2.9.0.1-installer.jar"
-    val file = new File(path)
-    val tf = TransferInfo(file, 1024*10)
+    val ti = TransferInfo(file, 1024 * 100)
 
-    sender.send(tf.bytes)
+    sender.send(ti.bytes)
 
     file.read(bytes => {
-      logger.debug("bytes.length: " + bytes.length)
       val result = sender.send(bytes)
-      logger.debug("result: "+ result)
-//      assert(result == bytes.length)
-    }, tf.packetSize)
+      assert(result == bytes.length)
+    }, ti.packetSize, true)
 
-    sender.receive(new Array[Byte](2))
+    val checksum = new Array[Byte](100)
+    sender.receive(checksum)
+
+    val current = file.md5Sum
+    logger.info("current checksum: " + current)
+
+    val result = new String(checksum).trim()
+    logger.info("result checksum: " + result)
+
+    if (result == current) logger.info("SUCCESS: checksums equal")
+    else logger.info("FAIL: checksums not equal")
   }
 }
+
+case class SendFile(file: File)

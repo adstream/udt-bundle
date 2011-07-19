@@ -58,11 +58,14 @@ class FileHandler extends Actor with Loggable {
       val file = new File(tmp, tf.fileName)
 
       file.write(bytes => {
-        logger.debug("bytes.length: " + bytes.length)
         receiver.receive(bytes)
-      }, tf.fileSize, tf.packetSize)
+      }, tf.fileSize, tf.packetSize, true)
 
-      receiver.send(Array[Byte](1, 1))
+      val result = new Array[Byte](100)
+      val checksum = file.md5Sum
+      logger.debug("md5Sum: " + checksum)
+      checksum.getBytes("UTF-8").copyToArray(result)
+      receiver.send(result)
     case unknown => EventHandler.warning(this, "Unknown message: %s".format(unknown))
   }
 }
