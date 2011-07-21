@@ -2,18 +2,32 @@ package com.adstream.udt
 
 import java.net.InetSocketAddress
 import com.barchart.udt.{TypeUDT, SocketUDT}
-import net.liftweb.common.Loggable
 import java.io._
 import com.adstream.udt.Predef._
 import net.liftweb.util.Props
 import akka.actor.Actor._
 import akka.actor.Actor
 import akka.event.EventHandler
+import net.liftweb.common.{Box, Loggable}
+import util.Properties
 
 /**
  * @author Yaroslav Klymko
  */
 object FileServer extends App with Loggable {
+
+  Props.whereToLook = () => {
+    val name = "server"
+    def stream: Box[InputStream] = Properties.propOrNone("user.dir") match {
+      case Some(dir) =>
+        val file = new File(dir, name + ".props")
+        if (file.exists()) Some(new FileInputStream(file))
+        else None
+      case _ => None
+    }
+    (name, () => stream) :: Nil
+  }
+
   val server = actorOf[FileServer].start()
   server ! StartReceiving
 }
@@ -54,7 +68,7 @@ class FileHandler extends Actor with Loggable {
       receiver.receive(bs)
 
       val tf = TransferInfo(bs)
-      val tmp = Props.get("server.out.dir", System.getProperty("java.io.tmpdir"))
+      val tmp = Props.get("server.out.dir", Properties.propOrEmpty("user.dir"))
       val file = new File(tmp, tf.fileName)
 
       file.write(bytes => {

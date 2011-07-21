@@ -1,6 +1,5 @@
 package com.adstream.udt
 
-import net.liftweb.common.Loggable
 import scala.App
 import scala.Predef._
 import java.net.InetSocketAddress
@@ -10,6 +9,8 @@ import net.liftweb.util.Props
 import com.barchart.udt.{TypeUDT, SocketUDT}
 import akka.actor.Actor
 import akka.event.EventHandler
+import net.liftweb.common.{Box, Loggable}
+import util.Properties
 
 /**
  * @author Yaroslav Klymko
@@ -18,6 +19,19 @@ import akka.event.EventHandler
 object FileClient extends App with Loggable {
   if (args.isEmpty) logger.error("File path is not provided")
   else {
+
+    Props.whereToLook = () => {
+      val name = "client"
+      def stream: Box[InputStream] = Properties.propOrNone("user.dir") match {
+        case Some(dir) =>
+          val file = new File(dir, name + ".props")
+          if (file.exists()) Some(new FileInputStream(file))
+          else None
+        case _ => None
+      }
+      (name, () => stream) :: Nil
+    }
+
     val path = args(0)
     Actor.actorOf[FileClient].start() !! SendFile(new File(path))
     Actor.registry.shutdownAll()
