@@ -8,41 +8,32 @@ import net.liftweb.util.Props
 import akka.actor.Actor._
 import akka.actor.Actor
 import akka.event.EventHandler
-import net.liftweb.common.{Box, Loggable}
+import net.liftweb.common.Loggable
 import util.Properties
 
 /**
  * @author Yaroslav Klymko
  */
-object FileServer extends App with Loggable {
+object FileServer extends App with Loggable with PropsOutside {
 
-  Props.whereToLook = () => {
-    val name = "server"
-    def stream: Box[InputStream] = Properties.propOrNone("user.dir") match {
-      case Some(dir) =>
-        val file = new File(dir, name + ".props")
-        if (file.exists()) Some(new FileInputStream(file))
-        else None
-      case _ => None
-    }
-    (name, () => stream) :: Nil
-  }
+  def propsName = "server.props"
 
-  val server = actorOf[FileServer].start()
+  val out = Props.get("server.out.dir", Properties.propOrEmpty("user.dir"))
+  val addr = new InetSocketAddress(Props.getInt("udt.server.port", 12345));
+  val server = actorOf(new FileServer(addr, out)).start()
   server ! StartReceiving
 }
 
 
-class FileServer extends Actor with Loggable {
+class FileServer(val addr: InetSocketAddress, val outDir: String) extends Actor with Loggable {
 
   val socket = new SocketUDT(TypeUDT.DATAGRAM);
 
   override def preStart() {
-    Configuration.configure(socket)
+    UdtProps.configure(socket)
 
-    val serverAddress = new InetSocketAddress(Props.getInt("udt.server.port", 12345));
-    logger.info("UDT Server address: %s".format(serverAddress))
-    socket.bind(serverAddress);
+    logger.info("UDT Server address: %s".format(addr))
+    socket.bind(addr);
 
     val listenQueueSize = Props.getInt("udt.listen.queue.size", 10)
     logger.info("UDT Listen queue size: %s".format(listenQueueSize))
@@ -52,14 +43,14 @@ class FileServer extends Actor with Loggable {
   protected def receive = {
     case StartReceiving =>
       EventHandler.debug(this, "StartReceiving")
-      actorOf[FileHandler].start ! Receive(socket.accept())
+      actorOf(new FileHandler(outDir)).start ! Receive(socket.accept())
       self ! StartReceiving
     case StopServer => self.stop()
     case unknown => EventHandler.warning(this, "Unknown message: %s".format(unknown))
   }
 }
 
-class FileHandler extends Actor with Loggable {
+class FileHandler(val outDir: String) extends Actor with Loggable {
   protected def receive = {
     case Receive(receiver) =>
       EventHandler.debug(this, "Receive")
@@ -68,8 +59,8 @@ class FileHandler extends Actor with Loggable {
       receiver.receive(bs)
 
       val tf = TransferInfo(bs)
-      val tmp = Props.get("server.out.dir", Properties.propOrEmpty("user.dir"))
-      val file = new File(tmp, tf.fileName)
+
+      val file = new File(outDir, tf.fileName)
 
       file.write(bytes => {
         receiver.receive(bytes)

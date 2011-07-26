@@ -2,43 +2,36 @@ package com.adstream.udt
 
 import scala.App
 import scala.Predef._
-import java.net.InetSocketAddress
 import java.io._
 import Predef._
 import net.liftweb.util.Props
 import com.barchart.udt.{TypeUDT, SocketUDT}
 import akka.actor.Actor
 import akka.event.EventHandler
-import net.liftweb.common.{Box, Loggable}
-import util.Properties
+import net.liftweb.common.Loggable
+import java.net.InetSocketAddress
 
 /**
  * @author Yaroslav Klymko
  */
+object FileClient extends App with Loggable with PropsOutside {
 
-object FileClient extends App with Loggable {
   if (args.isEmpty) logger.error("File path is not provided")
   else {
-
-    Props.whereToLook = () => {
-      val name = "client"
-      def stream: Box[InputStream] = Properties.propOrNone("user.dir") match {
-        case Some(dir) =>
-          val file = new File(dir, name + ".props")
-          if (file.exists()) Some(new FileInputStream(file))
-          else None
-        case _ => None
-      }
-      (name, () => stream) :: Nil
-    }
-
     val path = args(0)
-    Actor.actorOf[FileClient].start() !! SendFile(new File(path))
+    val clientAddr = new InetSocketAddress(Props.getInt("udt.local.port", 54321))
+    val serverAddr = new InetSocketAddress(
+      Props.get("udt.server.host", "localhost"),
+      Props.getInt("udt.server.port", 12345))
+
+    Actor.actorOf(new FileClient(clientAddr, serverAddr)).start() !! SendFile(new File(path))
     Actor.registry.shutdownAll()
   }
+
+  def propsName = "client.props"
 }
 
-class FileClient extends Actor with Loggable {
+class FileClient(val address: InetSocketAddress, val serverAddress: InetSocketAddress) extends Actor with Loggable {
 
   protected def receive = {
     case SendFile(file) => send(file)
@@ -46,19 +39,15 @@ class FileClient extends Actor with Loggable {
   }
 
   def send(file: File) {
-    val sender = Configuration.configure(new SocketUDT(TypeUDT.DATAGRAM))
+    val sender = UdtProps.configure(new SocketUDT(TypeUDT.DATAGRAM))
 
-    val clientAddress = new InetSocketAddress(Props.getInt("udt.local.port", 54321))
-    logger.info("UDT Client address: " + clientAddress)
-    sender.bind(clientAddress)
+    logger.info("UDT Client address: " + address)
+    sender.bind(address)
 
-    val serverAddress = new InetSocketAddress(
-      Props.get("udt.server.host", "localhost"),
-      Props.getInt("udt.server.port", 12345))
     logger.info("UDT Server address: %s".format(serverAddress))
     sender.connect(serverAddress)
 
-    val ti = TransferInfo(file, 1024 * 100)
+    val ti = TransferInfo(file, sender.getSendBufferSize/10)
 
     sender.send(ti.bytes)
 
