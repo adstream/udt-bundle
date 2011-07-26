@@ -15,7 +15,7 @@ object Configuration extends Loggable {
     def set[T](option: OptionUDT, key: String, valueOf: String => T) {
       val value = valueOf(key)
       logger.info("%s: %s".format(key, value))
-//      socket.setOption(option, value)
+      socket.setOption(option, value)
     }
 
     set(UDT_MSS, "udt.max.packet.size", Props.getInt(_, 1500))

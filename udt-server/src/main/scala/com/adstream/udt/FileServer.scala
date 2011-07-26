@@ -40,7 +40,7 @@ class FileServer extends Actor with Loggable {
   override def preStart() {
     Configuration.configure(socket)
 
-    val serverAddress = new InetSocketAddress("localhost", Props.getInt("udt.server.port", 12345));
+    val serverAddress = new InetSocketAddress(Props.getInt("udt.server.port", 12345));
     logger.info("UDT Server address: %s".format(serverAddress))
     socket.bind(serverAddress);
 
