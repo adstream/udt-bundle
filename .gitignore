@@ -3,5 +3,5 @@
 **/target
 logs
 lib
-*/src/main/resources/props/t3hnar.props
-*/src/main/resources/props/YKlymko.props
+t3hnar.props
+YKlymko.props

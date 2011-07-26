@@ -48,7 +48,7 @@ class FileClient extends Actor with Loggable {
   def send(file: File) {
     val sender = Configuration.configure(new SocketUDT(TypeUDT.DATAGRAM))
 
-    val clientAddress = new InetSocketAddress("localhost", Props.getInt("udt.local.port", 54321))
+    val clientAddress = new InetSocketAddress(Props.getInt("udt.local.port", 54321))
     logger.info("UDT Client address: " + clientAddress)
     sender.bind(clientAddress)
 
