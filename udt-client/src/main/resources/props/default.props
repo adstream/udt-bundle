@@ -1,4 +1,4 @@
-udt.local.port=54321
+udt.local.port=0
 udt.server.host=localhost
 udt.server.port=12345
 

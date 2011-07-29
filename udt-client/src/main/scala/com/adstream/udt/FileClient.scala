@@ -19,7 +19,7 @@ object FileClient extends App with Loggable with PropsOutside {
   if (args.isEmpty) logger.error("File path is not provided")
   else {
     val path = args(0)
-    val clientAddr = new InetSocketAddress(Props.getInt("udt.local.port", 54321))
+    val clientAddr = new InetSocketAddress(Props.getInt("udt.local.port", 0))
     val serverAddr = new InetSocketAddress(
       Props.get("udt.server.host", "localhost"),
       Props.getInt("udt.server.port", 12345))
