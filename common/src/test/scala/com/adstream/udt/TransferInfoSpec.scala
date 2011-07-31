@@ -15,10 +15,10 @@ class TransferInfoSpec extends SpecificationWithJUnit {
 
   val file = new File(getClass.getResource("transfer-info.txt").getFile)
 
-  def e1 = TransferInfo(file, 1024) mustEqual TransferInfo("transfer-info.txt", 36, 1024)
+  def e1 = TransferInfo(file) mustEqual TransferInfo("transfer-info.txt", 36)
 
   def e2 = {
-    val tf = TransferInfo(file, 1024)
+    val tf = TransferInfo(file)
     TransferInfo(tf.bytes) mustEqual tf
   }
 }

@@ -2,14 +2,14 @@ package com.adstream.udt
 
 import scala.App
 import scala.Predef._
-import java.io._
-import Predef._
+import UdtPredef._
 import net.liftweb.util.Props
-import com.barchart.udt.{TypeUDT, SocketUDT}
 import akka.actor.Actor
 import akka.event.EventHandler
 import net.liftweb.common.Loggable
 import java.net.InetSocketAddress
+import java.io._
+import java.nio.ByteBuffer
 
 /**
  * @author Yaroslav Klymko
@@ -19,19 +19,24 @@ object FileClient extends App with Loggable with PropsOutside {
   if (args.isEmpty) logger.error("File path is not provided")
   else {
     val path = args(0)
-    val clientAddr = new InetSocketAddress(Props.getInt("udt.local.port", 0))
+    val address = new InetSocketAddress(Props.getInt("udt.local.port", 0))
     val serverAddr = new InetSocketAddress(
       Props.get("udt.server.host", "localhost"),
       Props.getInt("udt.server.port", 12345))
 
-    Actor.actorOf(new FileClient(clientAddr, serverAddr)).start() !! SendFile(new File(path))
+    val udt = new UdtClient(address, UdtConfig.FromProps)
+    Actor.actorOf(new FileClient(udt, serverAddr)).start() !! SendFile(new File(path))
     Actor.registry.shutdownAll()
   }
 
   def propsName = "client.props"
 }
 
-class FileClient(val address: InetSocketAddress, val serverAddress: InetSocketAddress) extends Actor with Loggable {
+class FileClient(val udt: UdtClient, val server: InetSocketAddress) extends Actor with Loggable {
+
+  override def preStart() {
+    udt.connect(server)
+  }
 
   protected def receive = {
     case SendFile(file) => send(file)
@@ -39,25 +44,45 @@ class FileClient(val address: InetSocketAddress, val serverAddress: InetSocketAd
   }
 
   def send(file: File) {
-    val sender = UdtProps.configure(new SocketUDT(TypeUDT.DATAGRAM))
+    val ti = TransferInfo(file)
 
-    logger.info("UDT Client address: " + address)
-    sender.bind(address)
+    udt.socket.send(ti.bytes)
 
-    logger.info("UDT Server address: %s".format(serverAddress))
-    sender.connect(serverAddress)
+    val buf = new Array[Byte](8)
+    udt.socket.receive(buf)
+    val index = ByteBuffer.wrap(buf).getLong
 
-    val ti = TransferInfo(file, sender.getSendBufferSize/10)
 
-    sender.send(ti.bytes)
+    val fis = new FileInputStream(file)
+    fis.skip(index)
 
-    file.read(bytes => {
-      val result = sender.send(bytes)
-      assert(result == bytes.length)
-    }, ti.packetSize, true)
+
+    def send() {
+      val buf = new Array[Byte](udt.socket.getSendBufferSize / 10)
+      val read = fis.read(buf)
+      logger.debug(read.toString)
+      if (read == buf.length) {
+        udt.socket.send(buf)
+        send()
+      }
+      else {
+        udt.socket.send(buf, 0, read)
+      }
+    }
+
+    try {
+      send()
+    } finally {
+      fis.close()
+    }
+
+//    file.read(bytes => {
+//      val result = udt.socket.send(bytes)
+//      assert(result == bytes.length)
+//    },  true)
 
     val checksum = new Array[Byte](100)
-    sender.receive(checksum)
+    udt.socket.receive(checksum)
 
     val current = file.md5Sum
     logger.info("current checksum: " + current)

@@ -1,7 +1,7 @@
 package com.adstream.udt
 
 import org.specs2.SpecificationWithJUnit
-import com.adstream.udt.Predef._
+import com.adstream.udt.UdtPredef._
 import java.io.File
 
 /**
