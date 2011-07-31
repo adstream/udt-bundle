@@ -79,7 +79,7 @@ class FileReceiver(val outDir: String) extends Actor with Loggable {
 
       def x(x: Long) = ((100.0 / tf.fileSize) * x).round
 
-      val df = new DecimalFormat("#.###");
+      val df = new DecimalFormat("#.##");
       def write() {
         val buf = new Array[Byte](receiver.getReceiveBufferSize / 10)
 

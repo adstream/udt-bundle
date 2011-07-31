@@ -10,6 +10,7 @@ import net.liftweb.common.Loggable
 import java.net.InetSocketAddress
 import java.io._
 import java.nio.ByteBuffer
+import java.text.DecimalFormat
 
 /**
  * @author Yaroslav Klymko
@@ -50,36 +51,45 @@ class FileClient(val udt: UdtClient, val server: InetSocketAddress) extends Acto
 
     val buf = new Array[Byte](8)
     udt.socket.receive(buf)
-    val index = ByteBuffer.wrap(buf).getLong
+    val done = ByteBuffer.wrap(buf).getLong
 
 
     val fis = new FileInputStream(file)
-    fis.skip(index)
+    fis.skip(done)
 
 
-    def send() {
+    def x(x: Long) = ((100.0 / file.length()) * x).round
+    val mb = (x: Long) => x / 1024 / 1024
+    val df = new DecimalFormat("#.##");
+    def send(done: Long) {
       val buf = new Array[Byte](udt.socket.getSendBufferSize / 10)
       val read = fis.read(buf)
-      logger.debug(read.toString)
       if (read == buf.length) {
+        val start = System.currentTimeMillis()
         udt.socket.send(buf)
-        send()
+        val time = System.currentTimeMillis() - start
+        val before = x(done)
+        val progress = x(done + read)
+        val speed = read.toDouble / 1024 / 1024 / (time.toDouble / 1000)
+        if (progress != before) logger.debug("Progress: " + progress.toString + "% [" + df.format(speed) + "mb/s]")
+        send(read + done)
       }
       else {
         udt.socket.send(buf, 0, read)
       }
     }
 
+    val start = System.currentTimeMillis()
     try {
-      send()
+      send(done)
     } finally {
       fis.close()
     }
+    val seconds = (System.currentTimeMillis - start) / 1000
 
-//    file.read(bytes => {
-//      val result = udt.socket.send(bytes)
-//      assert(result == bytes.length)
-//    },  true)
+    def uploaded = mb(file.length() - done)
+    logger.info("Uploaded %smb in: %s seconds. Avarage speed: %smb/s".format(
+        uploaded, seconds, uploaded / seconds))
 
     val checksum = new Array[Byte](100)
     udt.socket.receive(checksum)
