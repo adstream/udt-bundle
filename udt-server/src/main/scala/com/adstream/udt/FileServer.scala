@@ -11,8 +11,6 @@ import net.liftweb.common.Loggable
 import util.Properties
 import java.nio.ByteBuffer
 import java.io._
-import collection.mutable.Buffer
-import org.specs2.internal.scalaz.Validation
 import java.text.DecimalFormat
 
 /**
@@ -81,7 +79,7 @@ class FileReceiver(val outDir: String) extends Actor with Loggable {
 
       val df = new DecimalFormat("#.##");
       def write() {
-        val buf = new Array[Byte](receiver.getReceiveBufferSize / 10)
+        val buf = new Array[Byte](1024 * 1024)
 
         val start = System.currentTimeMillis()
         val received = receiver.receive(buf)

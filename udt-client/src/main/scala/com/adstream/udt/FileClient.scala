@@ -62,7 +62,7 @@ class FileClient(val udt: UdtClient, val server: InetSocketAddress) extends Acto
     val mb = (x: Long) => x / 1024 / 1024
     val df = new DecimalFormat("#.##");
     def send(done: Long) {
-      val buf = new Array[Byte](udt.socket.getSendBufferSize / 10)
+      val buf = new Array[Byte](1024 * 1024)
       val read = fis.read(buf)
       if (read == buf.length) {
         val start = System.currentTimeMillis()
